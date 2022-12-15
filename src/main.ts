@@ -30,27 +30,31 @@ enum PuzzleType {
 const SIZE = 64;
 
 async function main() {
-  const [row, col] = [11 + 2 * 8, 7 + 2 * 8];
+  const [row, col] = [11, 9];
+  PIXI.Assets.add("content", "textures/content.jpeg");
+  PIXI.Assets.add("puzzle", "textures/puzzle.png");
+  const assets = await PIXI.Assets.load(["puzzle", "content"]);
+  const content: PIXI.Texture = assets["content"];
+  const contentWidth = content.width;
+  const contentHeight = content.height;
+  const contentWidthScale = (row * SIZE) / contentWidth;
+  const contentHeightScale = (col * SIZE) / contentHeight;
+
   const { clientHeight, clientWidth } = window.document.body;
   const app = new PIXI.Application({
-    background: "#000",
+    background: "#0ab6f9",
     width: clientWidth,
     height: clientHeight,
   });
   document.body.appendChild(app.view as any);
-  PIXI.Assets.add("content", "textures/content.jpeg");
-  PIXI.Assets.add("puzzle", "textures/puzzle.png");
-  const assets = await PIXI.Assets.load(["puzzle", "content"]);
-  const content = assets["content"];
-  // app.stage.addChild(new PIXI.Sprite(content));
-  // Create a new texture
+
   const texture = assets["puzzle"];
   const sheet = new PIXI.Spritesheet(texture, {
     frames: {
       [PuzzleType.LeftTop]: {
         frame: {
           x: 0,
-          y: 0,
+          y: 128,
           w: 128,
           h: 128,
         },
@@ -58,7 +62,7 @@ async function main() {
       [PuzzleType.Center0]: {
         frame: {
           x: 128,
-          y: 0,
+          y: 128,
           w: 128,
           h: 128,
         },
@@ -66,7 +70,7 @@ async function main() {
       [PuzzleType.Center1]: {
         frame: {
           x: 128 * 1,
-          y: 0,
+          y: 128,
           w: 128,
           h: 128,
         },
@@ -75,7 +79,7 @@ async function main() {
       [PuzzleType.CenterTop0]: {
         frame: {
           x: 128 * 2,
-          y: 0,
+          y: 128,
           w: 128,
           h: 128,
         },
@@ -83,7 +87,7 @@ async function main() {
       [PuzzleType.CenterTop1]: {
         frame: {
           x: 128 * 3,
-          y: 0,
+          y: 128,
           w: 128,
           h: 128,
         },
@@ -171,10 +175,16 @@ async function main() {
 
   const sprites: PIXI.Container[] = [];
   const container = new PIXI.Container();
-  const slots: Record<string, { pos: number[]; sprite: PIXI.Sprite }> = {};
-  container.scale.set(0.5);
-
-  // container.
+  const slots: Record<
+    string,
+    {
+      pos: number[];
+      left: PIXI.Sprite;
+      right: PIXI.Sprite;
+      top: PIXI.Sprite;
+      bottom: PIXI.Sprite;
+    }
+  > = {};
 
   const toPuzzleType = (i: number, j: number, row: number, col: number) => {
     if (i === 0 && j === 0) {
@@ -240,7 +250,10 @@ async function main() {
     }
   };
 
-  let dragTarget: { hit: PIXI.DisplayObject; pos: number[][] } | null = null;
+  let dragTarget: {
+    puzzle: PIXI.DisplayObject & { hits: PIXI.DisplayObject[] };
+    pos: number[][];
+  } | null = null;
 
   const toPuzzle = (x: number, y: number, row: number, col: number) => {
     const puzzleType = toPuzzleType(x, y, row, col);
@@ -262,10 +275,19 @@ async function main() {
     slotBottom.tint = 0x92f0ff;
     slotBottom.y = 32;
 
-    [slotLeft,slotTop,slotRight,slotBottom].forEach((slot) => {
+    slots[`${x}_${y}`] = {
+      pos: [x, y],
+      left: slotLeft,
+      top: slotTop,
+      right: slotRight,
+      bottom: slotBottom,
+    };
+
+    [slotLeft, slotTop, slotRight, slotBottom].forEach((slot) => {
       slot.anchor.set(0.5);
+      slot.hitArea = new PIXI.Rectangle();
       slot.alpha = 0;
-    })
+    });
 
     const hit = new PIXI.Sprite(Texture.WHITE);
     hit.tint = 0xff0fff;
@@ -275,6 +297,7 @@ async function main() {
     hit.anchor.set(0.5);
 
     const contentLayer = new PIXI.Sprite(content);
+    contentLayer.scale.set(contentWidthScale, contentHeightScale);
 
     contentLayer.x -= 33;
     contentLayer.x -= x * SIZE;
@@ -321,8 +344,7 @@ async function main() {
     }
 
     selfSlots.forEach((slot) => {
-      r.addChild(slot);
-      slots[`${x}_${y}`] = { sprite: slot, pos: [x, y] };
+      Object.assign(slot, { pos: `${x}_${y}` }), r.addChild(slot);
     });
 
     r.x += 34 + SIZE * x;
@@ -334,13 +356,15 @@ async function main() {
     hit.interactive = true;
     sprite.interactive = false;
     sprite.hitArea = new PIXI.Rectangle(0, 0, 0, 0);
+
+    Object.assign(r, { hits: [hit], pos: `${x}_${y}` });
     hit.on("pointerdown", (event) => {
-      dragTarget = { hit: r, pos: [[x, y]] };
+      dragTarget = { puzzle: Object.assign(r, { hits: [hit] }), pos: [[x, y]] };
       r.zIndex = -1;
-      dragTarget.hit.parent.toLocal(
+      dragTarget.puzzle.parent.toLocal(
         event.global,
         undefined,
-        dragTarget.hit.position
+        dragTarget.puzzle.position
       );
       app.stage.on("pointermove", onDragMove);
     });
@@ -351,11 +375,69 @@ async function main() {
     for (let j = 0; j < col; j++) {
       sprites.push(toPuzzle(i, j, row, col));
     }
+  const join = (
+    slot1: PIXI.Sprite,
+    slot2: PIXI.Sprite,
+    offsetX: number,
+    offsetY: number
+  ) =>
+    Object.assign(slot1, {
+      joinTo: slot2,
+      offset: new PIXI.Point(offsetX, offsetY),
+    });
+  // 设置slot的tag
+  for (let i = 0; i < row; i++)
+    for (let j = 0; j < col; j++) {
+      const puzzleType = toPuzzleType(i, j, row, col);
+      if ([PuzzleType.LeftTop].includes(puzzleType)) {
+        // 左上角
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
+      } else if (
+        [PuzzleType.CenterTop0, PuzzleType.CenterTop1].includes(puzzleType) // 上边
+      ) {
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
+      } else if ([PuzzleType.RightTop].includes(puzzleType)) {
+        // 右上角
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
+      } else if ([PuzzleType.LeftBottom].includes(puzzleType)) {
+        // 左下角
+        // TODO join 其他
+      } else if ([PuzzleType.RightBottom].includes(puzzleType)) {
+        // 右下角
+        // TODO join 其他
+      } else if (
+        [PuzzleType.LeftCenter0, PuzzleType.LeftCenter1].includes(puzzleType) // 左边
+      ) {
+        // TODO join 其他
+      } else if (
+        [PuzzleType.RightCenter1, PuzzleType.RightCenter2].includes(puzzleType) // 右边
+      ) {
+        // TODO join 其他
+      } else if (
+        // 上边
+        [PuzzleType.CenterBottom0, PuzzleType.CenterBottom1].includes(
+          puzzleType
+        )
+      ) {
+        // TODO join 其他
+      } else {
+        // 中间
+        // TODO join 其他
+      }
+    }
 
   app.stage.interactive = true;
   app.stage.hitArea = app.screen;
 
   container.addChild(...sprites);
+  container.pivot.x = container.width / 2;
+  container.pivot.y = container.height / 2;
+  container.x = app.screen.width / 2;
+  container.y = app.screen.height / 2;
   // test.width = 100;
   // test.height = 100;
   // container.addChild(test);
@@ -363,10 +445,10 @@ async function main() {
 
   function onDragMove(event) {
     if (dragTarget) {
-      dragTarget.hit.parent.toLocal(
+      dragTarget.puzzle.parent.toLocal(
         event.global,
         undefined,
-        dragTarget.hit.position
+        dragTarget.puzzle.position
       );
     }
   }
@@ -375,12 +457,42 @@ async function main() {
 
   function onDragEnd() {
     if (dragTarget) {
-      console.log(dragTarget);
+      const { pos } = dragTarget;
+      const slotTests = pos
+        .map(([x, y]) => slots[`${x}_${y}`])
+        .flat()
+        .map((slot) => [slot.left, slot.right, slot.top, slot.bottom])
+        .flat()
+        .filter((slot) => (slot as any).joinTo);
+      for (const slotTest of slotTests) {
+        const { joinTo, offset } = slotTest as PIXI.Sprite & {
+          joinTo: PIXI.Sprite;
+          offset: PIXI.Point;
+        };
+        const p0 = slotTest.getGlobalPosition();
+        const p1 = joinTo.getGlobalPosition();
+        const distance = toDistance(p0, p1);
+        if (distance < 20) {
+          dragTarget.puzzle.parent.toLocal(
+            { x: p1.x + offset.x, y: p1.y + offset.y },
+            undefined,
+            dragTarget.puzzle.position
+          );
+
+          // TODO merge 过程
+        }
+      }
 
       app.stage.off("pointermove", onDragMove);
       dragTarget = null;
     }
   }
+}
+
+function toDistance(p0: PIXI.Point, p1: PIXI.Point): number {
+  const a = p0.x - p1.x;
+  const b = p0.y - p1.y;
+  return Math.sqrt(a * a + b * b);
 }
 
 main();
