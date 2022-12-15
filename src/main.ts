@@ -33,7 +33,7 @@ async function main() {
   const [row, col] = [11 + 2 * 8, 7 + 2 * 8];
   const { clientHeight, clientWidth } = window.document.body;
   const app = new PIXI.Application({
-    background: "#1099bb",
+    background: "#000",
     width: clientWidth,
     height: clientHeight,
   });
@@ -171,13 +171,10 @@ async function main() {
 
   const sprites: PIXI.Container[] = [];
   const container = new PIXI.Container();
+  const slots: Record<string, { pos: number[]; sprite: PIXI.Sprite }> = {};
   container.scale.set(0.5);
 
   // container.
-
-  const test = new PIXI.Sprite(Texture.WHITE);
-
- 
 
   const toPuzzleType = (i: number, j: number, row: number, col: number) => {
     if (i === 0 && j === 0) {
@@ -243,15 +240,35 @@ async function main() {
     }
   };
 
-  let dragTarget;
+  let dragTarget: { hit: PIXI.DisplayObject; pos: number[][] } | null = null;
 
   const toPuzzle = (x: number, y: number, row: number, col: number) => {
-    const sprite = mapper[toPuzzleType(x, y, row, col)]();
+    const puzzleType = toPuzzleType(x, y, row, col);
+    const sprite = mapper[puzzleType]();
     const puzzle = new PIXI.Container();
     const r = new PIXI.Container();
     sprite.anchor.set(0.5);
+    // TODO 这里需要个slot 编号, 使得重合的slot获得相同的编号
+    const slotLeft = new PIXI.Sprite(Texture.WHITE);
+    slotLeft.tint = 0x0010ff;
+    slotLeft.x = -32;
+    const slotTop = new PIXI.Sprite(Texture.WHITE);
+    slotTop.tint = 0x8810ff;
+    slotTop.y = -32;
+    const slotRight = new PIXI.Sprite(Texture.WHITE);
+    slotRight.tint = 0x5590ff;
+    slotRight.x = 32;
+    const slotBottom = new PIXI.Sprite(Texture.WHITE);
+    slotBottom.tint = 0x92f0ff;
+    slotBottom.y = 32;
+
+    [slotLeft,slotTop,slotRight,slotBottom].forEach((slot) => {
+      slot.anchor.set(0.5);
+      slot.alpha = 0;
+    })
 
     const hit = new PIXI.Sprite(Texture.WHITE);
+    hit.tint = 0xff0fff;
     hit.alpha = 0;
     hit.width = SIZE - 8;
     hit.height = SIZE - 8;
@@ -273,6 +290,41 @@ async function main() {
 
     r.addChild(puzzle);
     r.addChild(hit);
+    let selfSlots: PIXI.Sprite[];
+    // 提出多余的slot
+    if ([PuzzleType.LeftTop].includes(puzzleType)) {
+      selfSlots = [slotRight, slotBottom];
+    } else if (
+      [PuzzleType.CenterTop0, PuzzleType.CenterTop1].includes(puzzleType)
+    ) {
+      selfSlots = [slotLeft, slotRight, slotBottom];
+    } else if ([PuzzleType.RightTop].includes(puzzleType)) {
+      selfSlots = [slotLeft, slotBottom];
+    } else if ([PuzzleType.LeftBottom].includes(puzzleType)) {
+      selfSlots = [slotTop, slotRight];
+    } else if ([PuzzleType.RightBottom].includes(puzzleType)) {
+      selfSlots = [slotTop, slotLeft];
+    } else if (
+      [PuzzleType.LeftCenter0, PuzzleType.LeftCenter1].includes(puzzleType)
+    ) {
+      selfSlots = [slotTop, slotRight, slotBottom];
+    } else if (
+      [PuzzleType.RightCenter1, PuzzleType.RightCenter2].includes(puzzleType)
+    ) {
+      selfSlots = [slotLeft, slotTop, slotBottom];
+    } else if (
+      [PuzzleType.CenterBottom0, PuzzleType.CenterBottom1].includes(puzzleType)
+    ) {
+      selfSlots = [slotLeft, slotTop, slotRight];
+    } else {
+      selfSlots = [slotLeft, slotTop, slotRight, slotBottom];
+    }
+
+    selfSlots.forEach((slot) => {
+      r.addChild(slot);
+      slots[`${x}_${y}`] = { sprite: slot, pos: [x, y] };
+    });
+
     r.x += 34 + SIZE * x;
     r.y += 34 + SIZE * y;
 
@@ -283,9 +335,13 @@ async function main() {
     sprite.interactive = false;
     sprite.hitArea = new PIXI.Rectangle(0, 0, 0, 0);
     hit.on("pointerdown", (event) => {
-      dragTarget = r;
+      dragTarget = { hit: r, pos: [[x, y]] };
       r.zIndex = -1;
-      dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+      dragTarget.hit.parent.toLocal(
+        event.global,
+        undefined,
+        dragTarget.hit.position
+      );
       app.stage.on("pointermove", onDragMove);
     });
     return r;
@@ -304,22 +360,24 @@ async function main() {
   // test.height = 100;
   // container.addChild(test);
   app.stage.addChild(container);
-  
 
   function onDragMove(event) {
     if (dragTarget) {
-      dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+      dragTarget.hit.parent.toLocal(
+        event.global,
+        undefined,
+        dragTarget.hit.position
+      );
     }
   }
   app.stage.on("pointerleave", onDragEnd);
   app.stage.on("pointerup", onDragEnd);
 
-  
-
   function onDragEnd() {
     if (dragTarget) {
+      console.log(dragTarget);
+
       app.stage.off("pointermove", onDragMove);
-      dragTarget.alpha = 1;
       dragTarget = null;
     }
   }
