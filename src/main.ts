@@ -30,7 +30,7 @@ enum PuzzleType {
 const SIZE = 64;
 
 async function main() {
-  const [row, col] = [11, 9];
+  const [row, col] = [5, 5];
   PIXI.Assets.add("content", "textures/content.jpeg");
   PIXI.Assets.add("puzzle", "textures/puzzle.png");
   const assets = await PIXI.Assets.load(["puzzle", "content"]);
@@ -347,11 +347,11 @@ async function main() {
       Object.assign(slot, { pos: `${x}_${y}` }), r.addChild(slot);
     });
 
-    r.x += 34 + SIZE * x;
-    r.y += 34 + SIZE * y;
+    // r.x += 34 + SIZE * x;
+    // r.y += 34 + SIZE * y;
 
-    // r.x = 34 + Math.random() * 2000;
-    // r.y = 34 + Math.random() * 1600;
+    r.x = 34 + Math.random() * (app.screen.width / 2 - SIZE * 4);
+    r.y = 34 + Math.random() * (app.screen.height / 2 - SIZE * 4);
 
     hit.interactive = true;
     sprite.interactive = false;
@@ -405,28 +405,39 @@ async function main() {
         join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
       } else if ([PuzzleType.LeftBottom].includes(puzzleType)) {
         // 左下角
-        // TODO join 其他
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
       } else if ([PuzzleType.RightBottom].includes(puzzleType)) {
         // 右下角
-        // TODO join 其他
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
       } else if (
         [PuzzleType.LeftCenter0, PuzzleType.LeftCenter1].includes(puzzleType) // 左边
       ) {
-        // TODO join 其他
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
       } else if (
         [PuzzleType.RightCenter1, PuzzleType.RightCenter2].includes(puzzleType) // 右边
       ) {
-        // TODO join 其他
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
       } else if (
-        // 上边
+        // 下边
         [PuzzleType.CenterBottom0, PuzzleType.CenterBottom1].includes(
           puzzleType
         )
       ) {
-        // TODO join 其他
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
       } else {
         // 中间
-        // TODO join 其他
+        join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
+        join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
+        join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
+        join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
       }
     }
 
@@ -480,11 +491,28 @@ async function main() {
           );
 
           // TODO merge 过程
+
+          // 胜利条件判断
         }
       }
-
       app.stage.off("pointermove", onDragMove);
       dragTarget = null;
+
+      setTimeout(() => {
+        const all_slot = Object.values(slots)
+          .map((slot) => [slot.left, slot.right, slot.bottom, slot.top])
+          .flat()
+          .filter((slot) => (slot as any).joinTo);
+        const isVictory = all_slot.every((slot) =>
+          approximatelyEqual(
+            slot.getGlobalPosition(),
+            (slot as any).joinTo.getGlobalPosition()
+          )
+        );
+        if (isVictory) {
+          alert("Victory!!!");
+        }
+      }, 200);
     }
   }
 }
@@ -493,6 +521,13 @@ function toDistance(p0: PIXI.Point, p1: PIXI.Point): number {
   const a = p0.x - p1.x;
   const b = p0.y - p1.y;
   return Math.sqrt(a * a + b * b);
+}
+
+function approximatelyEqual(p0: PIXI.Point, p1: PIXI.Point): boolean {
+  return (
+    Math.round(p0.x) === Math.round(p1.x) &&
+    Math.round(p0.y) === Math.round(p1.y)
+  );
 }
 
 main();
