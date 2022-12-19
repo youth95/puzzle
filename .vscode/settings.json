@@ -1,3 +1,6 @@
 {
-    "byted-ide.dev-environment-manager.showForwardPortNotification": "hidden"
+    "byted-ide.dev-environment-manager.showForwardPortNotification": "hidden",
+    "cSpell.words": [
+        "Spritesheet"
+    ]
 }
