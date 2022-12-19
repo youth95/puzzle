@@ -3,17 +3,14 @@ import { PuzzleType, UI } from "./types";
 
 
 
-export async function initAssets(contentURL: string = 'textures/content.jpeg') {
+export async function initAssets() {
   PIXI.Assets.add("puzzle", "textures/puzzle.png");
   PIXI.Assets.add("ui", "textures/ui.png");
-  // PIXI.Assets.add("content", contentURL);
   const assets = await PIXI.Assets.load(["puzzle", 'ui']);
-  const content: PIXI.Texture = PIXI.Texture.from(contentURL);
-  // const content: PIXI.Texture = assets['content'];
   const puzzleMasks = makePuzzleElement(await makePuzzleSheet(assets["puzzle"], 128).parse());
   const puzzleBorders = makePuzzleElement(await makePuzzleSheet(assets["puzzle"], 128 + 128).parse());
   const uis = await makeUISheet(assets['ui']).parse()
-  return { content, puzzleMasks, puzzleBorders, uis }
+  return { puzzleMasks, puzzleBorders, uis }
 }
 
 const makePuzzleElement: (textures: PIXI.utils.Dict<PIXI.Texture<PIXI.Resource>>) => Record<PuzzleType, () => PIXI.Sprite> = textures => ({
