@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { initAssets } from './assets';
 import { PuzzleType, UI } from './types';
+import { Background } from './background';
+import { Timer } from './Timer';
 
 class PuzzleJoin {
   joinTo?: PuzzleJoin;
@@ -380,19 +382,40 @@ class PuzzleRender extends PIXI.Container {
           )
         );
         if (isVictory) {
-          // alert("Victory!!!");
-          PuzzleGame.borders.forEach(sp => sp.visible = false);
-          PuzzleGame.hits.forEach(sp => sp.visible = false);
-          PuzzleGame.nextButtons.forEach(sp => sp.visible = true);
-          PuzzleGame.userIsVictory = true;
-          console.log('Victory!!!');
-
+          onVictory();
         } else {
           PuzzleGame.borders.forEach(sp => sp.visible = true);
         }
       }
     }
   }
+}
+
+function onVictory() {
+  PuzzleGame.borders.forEach(sp => sp.visible = false);
+  PuzzleGame.hits.forEach(sp => sp.visible = false);
+  PuzzleGame.nextButtons.forEach(sp => sp.visible = true);
+  PuzzleGame.userIsVictory = true;
+  const { width, height } = PuzzleGame.app.screen;
+  // showContainerBoarded(PuzzleGame.container);
+  // PuzzleGame.container.cacheAsBitmap = true;
+  // temp1.getLocalBounds()
+  const localBounds = PuzzleGame.container.getLocalBounds();
+  console.log(PuzzleGame.container.x, PuzzleGame.container.y,);
+  console.log(PuzzleGame.container);
+
+  // PuzzleGame.container.position = PuzzleGame.container.toLocal(new PIXI.Point(width + localBounds.x, height + localBounds.y));
+  console.log('Victory!!!');
+}
+
+function showContainerBoarded(container: PIXI.Container) {
+  const g = new PIXI.Graphics();
+  const { width, height, x, y } = container.getLocalBounds()
+  const { x: gx, y: gy } = container.getGlobalPosition();
+  console.log(container.getLocalBounds(), { gx, gy }, { lx: container.x, ly: container.y });
+  g.lineStyle(2, 0xFFFFFF, 1);
+  g.drawRect(x, y, width, height);
+  container.addChild(g);
 }
 
 
@@ -450,70 +473,14 @@ export class PuzzleGame {
     });
     PuzzleGame.app = app;
     document.body.appendChild(app.view as any);
-
-    // background
     const { width, height } = app.screen;
-    const x = width % 64 / 2;
-    const y = height % 64 / 2;
-    const w = (width - (width % 64)) / 64;
-    const h = (height - (height % 64)) / 64;
-    for (let i = 0; i < w; i++)
-      for (let j = 0; j < h; j++) {
-        let tx = uis[UI.TableCenter];
-        if (i === 0 && j === 0) {
-          tx = uis[UI.TableLeftTop]
-        } else if (i === 0 && j === h - 1) {
-          tx = uis[UI.TableLeftBottom]
-        } else if (i === w - 1 && j === 0) {
-          tx = uis[UI.TableRightTop]
-        } else if (i === w - 1 && j === h - 1) {
-          tx = uis[UI.TableRightBottom]
-        } else if (i === 0) {
-          tx = uis[UI.TableLeftCenter]
-        } else if (j === 0) {
-          tx = uis[UI.TableTop]
-        } else if (i === w - 1) {
-          tx = uis[UI.TableRightCenter]
-        } else if (j === h - 1) {
-          tx = uis[UI.TableCenterBottom]
-        }
-        const sprite = new PIXI.Sprite(tx);
-        sprite.x = x + i * 64;
-        sprite.y = y + j * 64;
-        app.stage.addChild(sprite);
-
-      }
-
-    // background end
-
+    app.stage.addChild(new Background(width, height, uis));
     // ticker
-
-    const time = new PIXI.Text('00:00', {
-      fill: '#fff',
-      fontSize: 42,
-    });
-    time.anchor.set(0.5);
-    time.x = app.screen.width / 2;
-    time.y = 40 + 64;
-
-    app.ticker.add(dt => {
-      if (!PuzzleGame.userIsVictory) {
-        PuzzleGame.timeCounter += 1 / dt;
-        const s = Math.floor((PuzzleGame.timeCounter / 60) % 60);
-        const m = Math.floor((PuzzleGame.timeCounter / 60 - s) / 60);
-        time.text = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-      }
-    })
-
-
-    const tickerUI = new PIXI.Sprite(uis[UI.Ticker]);
-    tickerUI.anchor.set(0.5);
-    tickerUI.x = app.screen.width / 2;
-    tickerUI.y = 64 * 2;
-    app.stage.addChild(tickerUI);
-    app.stage.addChild(time);
-
-    // ticker end
+    const timer = new Timer(uis);
+    timer.x = app.screen.width / 2;
+    timer.y = 64 * 2;
+    app.stage.addChild(timer);
+    app.ticker.add(timer.ticker);
 
     // music
     const musicUI = new PIXI.Sprite(uis[UI.MusicClose]);

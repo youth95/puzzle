@@ -4,7 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "vite"
+    "start": "vite",
+    "build": "vite build --base=/puzzle_static",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "vite": "^4.0.1"
