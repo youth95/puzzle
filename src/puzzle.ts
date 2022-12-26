@@ -3,6 +3,7 @@ import { initAssets } from './assets';
 import { PuzzleType, UI } from './types';
 import { Background } from './background';
 import { Timer } from './Timer';
+import { Easing, Tween, update, now } from '@tweenjs/tween.js';
 
 class PuzzleJoin {
   joinTo?: PuzzleJoin;
@@ -58,54 +59,30 @@ export class Puzzle {
         } else if (
           [PuzzleType.CenterTop0, PuzzleType.CenterTop1].includes(puzzleType) // 上边
         ) {
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
-          // join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
-
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].right.join(PuzzleGame.puzzles[`${i + 1}_${j}`].left, -32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].bottom.join(PuzzleGame.puzzles[`${i}_${j + 1}`].top, 0, -32);
-
         } else if ([PuzzleType.RightTop].includes(puzzleType)) {
           // 右上角
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
-
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].bottom.join(PuzzleGame.puzzles[`${i}_${j + 1}`].top, 0, -32);
-
-
         } else if ([PuzzleType.LeftBottom].includes(puzzleType)) {
           // 左下角
-          // join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].right.join(PuzzleGame.puzzles[`${i + 1}_${j}`].left, -32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
-
-
         } else if ([PuzzleType.RightBottom].includes(puzzleType)) {
           // 右下角
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
         } else if (
           [PuzzleType.LeftCenter0, PuzzleType.LeftCenter1].includes(puzzleType) // 左边
         ) {
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
-          // join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
-          // join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].right.join(PuzzleGame.puzzles[`${i + 1}_${j}`].left, -32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].bottom.join(PuzzleGame.puzzles[`${i}_${j + 1}`].top, 0, -32);
-
-
         } else if (
           [PuzzleType.RightCenter1, PuzzleType.RightCenter2].includes(puzzleType) // 右边
         ) {
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].bottom.join(PuzzleGame.puzzles[`${i}_${j + 1}`].top, 0, -32);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
@@ -115,28 +92,17 @@ export class Puzzle {
             puzzleType
           )
         ) {
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
-          // join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].right.join(PuzzleGame.puzzles[`${i + 1}_${j}`].left, -32, 0);
-
         } else {
           // 中间
-          // join(slots[`${i}_${j}`].left, slots[`${i - 1}_${j}`].right, 32, 0);
-          // join(slots[`${i}_${j}`].bottom, slots[`${i}_${j + 1}`].top, 0, -32);
-          // join(slots[`${i}_${j}`].top, slots[`${i}_${j - 1}`].bottom, 0, 32);
-          // join(slots[`${i}_${j}`].right, slots[`${i + 1}_${j}`].left, -32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].left.join(PuzzleGame.puzzles[`${i - 1}_${j}`].right, 32, 0);
           PuzzleGame.puzzles[`${i}_${j}`].bottom.join(PuzzleGame.puzzles[`${i}_${j + 1}`].top, 0, -32);
           PuzzleGame.puzzles[`${i}_${j}`].top.join(PuzzleGame.puzzles[`${i}_${j - 1}`].bottom, 0, 32);
           PuzzleGame.puzzles[`${i}_${j}`].right.join(PuzzleGame.puzzles[`${i + 1}_${j}`].left, -32, 0);
         }
       }
-
-
-
     return result;
   }
 
@@ -315,8 +281,8 @@ class PuzzleRender extends PIXI.Container {
       Object.assign(slot, { pos: `${x}_${y}` }), this.addChild(slot);
     });
 
-    // r.x += 34 + SIZE * x;
-    // r.y += 34 + SIZE * y;
+    // this.x += 34 + PuzzleRender.SIZE * x;
+    // this.y += 34 + PuzzleRender.SIZE * y;
 
     this.x = 34 + Math.random() * (PuzzleGame.app.screen.width / 2 - PuzzleRender.SIZE * 4);
     this.y = 34 + Math.random() * (PuzzleGame.app.screen.height / 2 - PuzzleRender.SIZE * 4);
@@ -396,26 +362,48 @@ function onVictory() {
   PuzzleGame.hits.forEach(sp => sp.visible = false);
   PuzzleGame.nextButtons.forEach(sp => sp.visible = true);
   PuzzleGame.userIsVictory = true;
+  const bounds = PuzzleGame.container.getBounds();
+  const dx = PuzzleGame.container.x - bounds.x;
+  const dy = PuzzleGame.container.y - bounds.y;
+  PuzzleGame.container.x = bounds.x
+  PuzzleGame.container.y = bounds.y
+
   const { width, height } = PuzzleGame.app.screen;
-  // showContainerBoarded(PuzzleGame.container);
-  // PuzzleGame.container.cacheAsBitmap = true;
-  // temp1.getLocalBounds()
-  const localBounds = PuzzleGame.container.getLocalBounds();
-  console.log(PuzzleGame.container.x, PuzzleGame.container.y,);
-  console.log(PuzzleGame.container);
+  const toX = (width - bounds.width / PuzzleGame.contentWidthScale) / 2;
+  const toY = (height - bounds.height / PuzzleGame.contentHeightScale) / 2;
+  PuzzleGame.container.children.forEach(item => {
+    item.x += dx;
+    item.y += dy;
+  });
 
-  // PuzzleGame.container.position = PuzzleGame.container.toLocal(new PIXI.Point(width + localBounds.x, height + localBounds.y));
+  PuzzleGame.container.visible = false;
+
+  const CG = new PIXI.Sprite(PuzzleGame.content);
+  CG.x = PuzzleGame.container.x;
+  CG.y = PuzzleGame.container.y;
+  CG.scale.set(PuzzleGame.contentWidthScale, PuzzleGame.contentHeightScale);
+  PuzzleGame.app.stage.addChildAt(CG, 1);
+  PuzzleGame.CG = CG;
+
+  new Tween({
+    x: PuzzleGame.container.x,
+    y: PuzzleGame.container.y,
+    scaleX: PuzzleGame.contentWidthScale,
+    scaleY: PuzzleGame.contentHeightScale,
+  }).to({
+    x: toX,
+    y: toY,
+    scaleX: 1,
+    scaleY: 1,
+  }, 2000)
+    .easing(Easing.Quadratic.Out)
+    .onUpdate(({ x, y, scaleX, scaleY }) => {
+      CG.x = x;
+      CG.y = y;
+      CG.scale.set(scaleX, scaleY);
+    }).start();
+
   console.log('Victory!!!');
-}
-
-function showContainerBoarded(container: PIXI.Container) {
-  const g = new PIXI.Graphics();
-  const { width, height, x, y } = container.getLocalBounds()
-  const { x: gx, y: gy } = container.getGlobalPosition();
-  console.log(container.getLocalBounds(), { gx, gy }, { lx: container.x, ly: container.y });
-  g.lineStyle(2, 0xFFFFFF, 1);
-  g.drawRect(x, y, width, height);
-  container.addChild(g);
 }
 
 
@@ -436,6 +424,7 @@ export class PuzzleGame {
   static row: number;
   static col: number;
   static timeCounter: number = 0;
+  static CG: PIXI.Sprite;
 
   static contents: string[] = [
     "https://img2.baidu.com/it/u=1779174718,345053138&fm=253&fmt=auto&app=120&f=JPEG?w=1280&h=800",
@@ -464,7 +453,7 @@ export class PuzzleGame {
     PuzzleGame.audio.loop = true;
     PuzzleGame.puzzleMasks = puzzleMasks;
     PuzzleGame.puzzleBorders = puzzleBorders;
-    PuzzleGame.setup(content, 3, 3);
+    PuzzleGame.setup(content, 5, 5);
     const { clientHeight, clientWidth } = window.document.body;
     const app = new PIXI.Application({
       background: "#0ab6f9",
@@ -557,6 +546,11 @@ export class PuzzleGame {
 
     // next end
 
+    const animation = (dt: number) => {
+      update(dt);
+      requestAnimationFrame(animation);
+    }
+    requestAnimationFrame(animation);
   }
 
   static setup(content: PIXI.Texture, row: number, col: number) {
@@ -574,6 +568,9 @@ export class PuzzleGame {
 
   static newGame() {
     this.container.removeChildren();
+    this.container.scale.set(1);
+    this.container.visible = true;
+    this.app.stage.removeChild(PuzzleGame.CG);
     const puzzles = Puzzle.makePuzzles(PuzzleGame.row, PuzzleGame.col).flat();
     puzzles.forEach(puzzle => {
       this.container.addChild(puzzle.render);
@@ -582,7 +579,7 @@ export class PuzzleGame {
     this.container.pivot.y = this.container.height / 2;
     this.container.x = PuzzleGame.app.screen.width / 2;
     this.container.y = PuzzleGame.app.screen.height / 2;
-    PuzzleGame.app.stage.addChild(this.container);
+    PuzzleGame.app.stage.addChildAt(this.container, 1);
     PuzzleGame.app.stage.interactive = true;
     PuzzleGame.app.stage.hitArea = PuzzleGame.app.screen;
   }
