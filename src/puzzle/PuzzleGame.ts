@@ -6,6 +6,7 @@ import { PuzzleType, UI } from "../types";
 import { Puzzle } from './Puzzle';
 import { PuzzleRender } from './PuzzleRender';
 import { update } from '@tweenjs/tween.js';
+import { initInteractive } from './interactive';
 
 
 export class PuzzleGame {
@@ -54,7 +55,7 @@ export class PuzzleGame {
     PuzzleGame.audio.loop = true;
     PuzzleGame.puzzleMasks = puzzleMasks;
     PuzzleGame.puzzleBorders = puzzleBorders;
-    PuzzleGame.setup(content, 5, 5);
+    PuzzleGame.setup(content, 3, 3);
     const { clientHeight, clientWidth } = window.document.body;
     const app = new PIXI.Application({
       background: "#0ab6f9",
@@ -146,6 +147,8 @@ export class PuzzleGame {
     PuzzleGame.nextButtons = nextButtons;
 
     // next end
+
+    initInteractive();
 
     const animation = (dt: number) => {
       update(dt);
