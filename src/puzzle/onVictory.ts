@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { PuzzleGame } from "./PuzzleGame";
 import { Easing, Tween, } from '@tweenjs/tween.js';
+import { Texture } from 'pixi.js';
 
 export function onVictory() {
   PuzzleGame.borders.forEach(sp => sp.visible = false);
@@ -46,7 +47,37 @@ export function onVictory() {
       CG.x = x;
       CG.y = y;
       CG.scale.set(scaleX, scaleY);
-    }).start();
+    })
+    .onComplete(() => {
+      const textContainer = new PIXI.Container();
+      PuzzleGame.CGTextMessage = textContainer;
+      const text = new PIXI.Text(PuzzleGame.message, {
+        fill: '#fff',
+        fontSize: 48,
+      });
+      const bounds = text.getBounds();
+      const bg = new PIXI.Sprite(Texture.WHITE);
+      bg.width = bounds.width;
+      bg.height = bounds.height;
+      bg.tint = 0x0f89d2;
+      textContainer.addChild(bg,text);
+      PuzzleGame.app.stage.addChildAt(textContainer, 2);
+
+      textContainer.alpha = 0;
+      textContainer.x = (PuzzleGame.app.screen.width - bounds.width) / 2;;
+      textContainer.y = (PuzzleGame.app.screen.height - bounds.height) / 2;
+      new Tween({ x: textContainer.x, y: textContainer.y, alpha: 0 }).to({
+        x: textContainer.x,
+        y: textContainer.y + 200,
+        alpha: 1,
+      }, 1000).easing(Easing.Quadratic.Out)
+        .onUpdate(({ x, y, alpha }) => {
+          textContainer.x = x;
+          textContainer.y = y;
+          textContainer.alpha = alpha;
+        }).start()
+    })
+    .start();
 
   console.log('Victory!!!');
 }
