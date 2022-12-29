@@ -45,3 +45,8 @@ export enum UI {
   Next,
   DownNext,
 }
+
+export interface GameContent {
+  image: string;
+  message: string;
+}
